@@ -16,6 +16,14 @@ import { UpdateAuthDto } from './dto/update-auth.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /*
+  Endpoints:
+  POST	/auth/register: Creates pending account
+  POST	/auth/login: Authenticates approved users
+  GET	/auth/me: Returns the authenticated user's information
+  PATCH	/auth/change-password: Changes the authenticated user's password
+  */
+
   @Post('/login')
   create(@Body() createAuthDto: CreateAuthDto) {
     return this.authService.create(createAuthDto);

@@ -15,6 +15,12 @@ enum Role {
   DEMO_ADMIN
 }
 
+enum AccountStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum HeadType{ 
   EARNING 
   DEDUCTION 
@@ -44,6 +50,7 @@ model User {
   role         Role      @default(EMPLOYEE)
   createdAt    DateTime  @default(now())
   employee     Employee?
+  status       AccountStatus @default(PENDING)
 }
     
 model Department {
