@@ -6,3 +6,153 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+
+enum Role { 
+  ADMIN 
+  EMPLOYEE 
+}
+
+enum HeadType{ 
+  EARNING 
+  DEDUCTION 
+}
+
+enum CalcType { 
+	FIXED 
+	PERCENT_OF_BASIC 
+	PER_UNIT
+	}
+
+enum UnitSource { 
+	OVERTIME_HOURS 
+	LATE_DAYS 
+	ABSENT_DAYS 
+	}
+enum PayslipStatus { 
+	DRAFT 
+	PUBLISHED 
+	}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(EMPLOYEE)
+  createdAt    DateTime  @default(now())
+  employee     Employee?
+}
+    
+model Department {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  employees Employee[]
+}
+
+
+
+model Employee {
+  id           Int               @id @default(autoincrement())
+  userId       Int               @unique
+  user         User              @relation(fields: [userId], references: [id])
+  empCode      String            @unique
+  fullName     String
+  phone        String?
+  designation  String?
+  joinDate     DateTime?
+  status       String            @default("ACTIVE")
+  departmentId Int?
+  department   Department?       @relation(fields: [departmentId], references: [id])
+  structureId  Int?
+  structure    PayrollStructure? @relation(fields: [structureId], references: [id])
+  attendance   Attendance[]
+  payslips     Payslip[]
+}
+   
+model PayrollStructure {
+  id          Int             @id @default(autoincrement())
+  name        String          @unique
+  description String?
+  employees   Employee[]
+  heads       StructureHead[]
+ }
+
+
+model PayrollHead {
+  id         Int             @id @default(autoincrement())
+  name       String          @unique
+  type       HeadType
+  calcType   CalcType
+  unitSource UnitSource?
+  isBasic    Boolean         @default(false)
+  structures StructureHead[]
+}
+
+model StructureHead {
+  id          Int              @id @default(autoincrement())
+  structureId Int
+  headId      Int
+  value       Decimal          @db.Decimal(12, 2)
+  structure   PayrollStructure @relation(fields: [structureId], references: [id], onDelete: Cascade)
+  head        PayrollHead      @relation(fields: [headId], references: [id])
+
+  @@unique([structureId, headId])
+}
+
+
+
+model Attendance {
+  id              Int       @id @default(autoincrement())
+  employeeId      Int
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+  workDate        DateTime  @db.Date
+  clockIn         DateTime
+  clockOut        DateTime?
+  workMinutes     Int       @default(0)
+  overtimeMinutes Int       @default(0)
+  isLate          Boolean   @default(false)
+
+  @@unique([employeeId, workDate])
+}
+   
+ model WorkPolicy {
+  id            Int    @id @default(1)
+  shiftStart    String @default("09:00")
+  shiftEnd      String @default("18:00")
+  graceMinutes  Int    @default(15)
+  breakMinutes  Int    @default(60)
+  standardHours Int    @default(8)
+  workingDays   Int    @default(22)
+}
+
+
+model Payslip {
+  id            Int           @id @default(autoincrement())
+  employeeId    Int
+  employee      Employee      @relation(fields: [employeeId], references: [id])
+  month         Int
+  year          Int
+  daysPresent   Int
+  lateDays      Int
+  overtimeHours Decimal       @db.Decimal(6, 2)
+  gross         Decimal       @db.Decimal(12, 2)
+  deductions    Decimal       @db.Decimal(12, 2)
+  netPay        Decimal       @db.Decimal(12, 2)
+  generatedAt   DateTime      @default(now())
+  items         PayslipItem[]
+  status PayslipStatus @default(DRAFT)
+
+  @@unique([employeeId, month, year])
+}
+
+
+
+model PayslipItem {
+  id        Int      @id @default(autoincrement())
+  payslipId Int
+  payslip   Payslip  @relation(fields: [payslipId], references: [id], onDelete: Cascade)
+  headName  String
+  type      HeadType
+  amount    Decimal  @db.Decimal(12, 2)
+  note      String?
+}
