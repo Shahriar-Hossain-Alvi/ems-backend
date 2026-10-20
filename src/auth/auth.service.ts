@@ -16,6 +16,10 @@ export class AuthService {
     return `This action returns a #${id} auth`;
   }
 
+  findMe(id: number) {
+    return `This action returns logged in user with id #${id}`;
+  }
+
   update(id: number, updateAuthDto: UpdateAuthDto) {
     return `This action updates a #${id} auth`;
   }

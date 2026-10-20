@@ -10,7 +10,14 @@ import { PayrollModule } from './payroll/payroll.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
-  imports: [UsersModule, AuthModule, EmployeesModule, AttendanceModule, DepartmentsModule, PayrollModule],
+  imports: [
+    UsersModule,
+    AuthModule,
+    EmployeesModule,
+    AttendanceModule,
+    DepartmentsModule,
+    PayrollModule,
+  ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })
