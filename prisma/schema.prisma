@@ -11,6 +11,8 @@ datasource db {
 enum Role { 
   ADMIN 
   EMPLOYEE 
+  SUPER_ADMIN
+  DEMO_ADMIN
 }
 
 enum HeadType{ 
@@ -22,17 +24,18 @@ enum CalcType {
 	FIXED 
 	PERCENT_OF_BASIC 
 	PER_UNIT
-	}
+}
 
 enum UnitSource { 
 	OVERTIME_HOURS 
 	LATE_DAYS 
 	ABSENT_DAYS 
-	}
+}
+
 enum PayslipStatus { 
 	DRAFT 
 	PUBLISHED 
-	}
+}
 
 model User {
   id           Int       @id @default(autoincrement())
@@ -75,7 +78,7 @@ model PayrollStructure {
   description String?
   employees   Employee[]
   heads       StructureHead[]
- }
+}
 
 
 model PayrollHead {
@@ -115,7 +118,8 @@ model Attendance {
   @@unique([employeeId, workDate])
 }
    
- model WorkPolicy {
+
+model WorkPolicy {
   id            Int    @id @default(1)
   shiftStart    String @default("09:00")
   shiftEnd      String @default("18:00")

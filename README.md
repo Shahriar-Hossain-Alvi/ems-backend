@@ -1,6 +1,19 @@
-<!-- format code -->
+## Format Code
 ```bash
 npm run format
+```
+
+## Generate a complete feature
+```bash
+pnpm exec nest g resource users --no-spec
+```
+
+## Generate individual piece
+```bash
+# Generate individual pieces
+pnpm exec nest g module employees
+pnpm exec nest g controller employees --no-spec
+pnpm exec nest g service employees --no-spec
 ```
 
 ## Commands
