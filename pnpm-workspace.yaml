@@ -3,4 +3,5 @@ allowBuilds:
   '@scarf/scarf': true
   '@swc/core': true
   bcrypt: true
+  esbuild: true
   prisma: true
