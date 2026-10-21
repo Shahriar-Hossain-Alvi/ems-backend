@@ -8,6 +8,11 @@ npm run format
 pnpm exec nest g resource users --no-spec
 ```
 
+## Execute Seed file
+```bash
+pnpm exec prisma db seed
+```
+
 ## Generate individual piece
 ```bash
 # Generate individual pieces

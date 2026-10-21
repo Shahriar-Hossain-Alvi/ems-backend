@@ -12,6 +12,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -21,6 +22,7 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -33,22 +35,29 @@ export class AuthController {
   PATCH	/auth/change-password: Changes the authenticated user's password
   */
 
+  @ApiOperation({
+    summary: 'Register a new user. But will be pending for approval.',
+  })
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
+  @ApiOperation({ summary: 'Login with email and password.' })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
 
+  @ApiOperation({ summary: "Get the authenticated user's information." })
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
   getMe(@Req() req: AuthenticatedRequest) {
     return this.authService.getMe(req.user.sub);
   }
 
+  @ApiOperation({ summary: "Change the authenticated user's password." })
   @UseGuards(JwtAuthGuard)
   @Patch('change-password')
   changePassword(
