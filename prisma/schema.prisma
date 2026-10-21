@@ -21,6 +21,12 @@ enum AccountStatus {
   REJECTED
 }
 
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+}
+
 enum HeadType{ 
   EARNING 
   DEDUCTION 
@@ -70,7 +76,7 @@ model Employee {
   phone        String?
   designation  String?
   joinDate     DateTime?
-  status       String            @default("ACTIVE")
+  status       EmployeeStatus  @default(ACTIVE)
   departmentId Int?
   department   Department?       @relation(fields: [departmentId], references: [id])
   structureId  Int?

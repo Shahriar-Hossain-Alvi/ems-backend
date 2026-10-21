@@ -8,11 +8,6 @@ npm run format
 pnpm exec nest g resource users --no-spec
 ```
 
-## Execute Seed file
-```bash
-pnpm exec prisma db seed
-```
-
 ## Generate individual piece
 ```bash
 # Generate individual pieces
@@ -21,10 +16,19 @@ pnpm exec nest g controller employees --no-spec
 pnpm exec nest g service employees --no-spec
 ```
 
-## Generate Prisma Client from schema.prisma models
+
+## Generate new migration after adding or modifying the schema.prisma and Generate Prisma Client
 ```bash
+npx prisma migrate dev --name name-of-the-migration
+
 pnpm exec prisma generate
 ```
+
+## Execute Seed file
+```bash
+pnpm exec prisma db seed
+```
+
 
 ## Commands
 ```bash

@@ -35,3 +35,37 @@ Configure payroll structures, heads, work policy, monthly calculations and paysl
 Step 5 — Dashboard and frontend integration
 
 Provide the aggregated data each dashboard actually needs.
+
+
+
+## Step 1 — Departments API
+
+5 endpoints
+- POST /departments — create department
+- GET /departments — list departments for dropdowns
+- GET /departments/:id — view details
+- PATCH /departments/:id — update department
+- DELETE /departments/:id — delete department, only when safe
+These endpoints support department management and the approval form.
+
+
+
+## Step 2 — Employee approval API
+
+3 core endpoints
+- GET /employees/pending — list accounts awaiting approval
+- PATCH /employees/:id/approve — assign department, payroll structure, join date and permanent employee code
+- PATCH /employees/:id/reject — reject a registration
+Only authorized admins should be able to use these endpoints. We also need a way for admins to restore a rejected account to pending, or remove it safely.
+
+
+## Step 3 — Employee profile API
+
+2 core endpoints
+- GET /employees/me — get the employee's full profile
+- PATCH /employees/me — update allowed fields, such as full name and phone
+Email, employee ID, department, join date, payroll structure, and employment status must not be editable through this endpoint.
+
+## Payroll Structure
+
+- GET /payroll/structures - admin to retrieve available payroll structures for the approval dropdown.
