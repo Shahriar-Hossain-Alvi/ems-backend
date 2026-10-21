@@ -16,6 +16,11 @@ pnpm exec nest g controller employees --no-spec
 pnpm exec nest g service employees --no-spec
 ```
 
+## Generate Prisma Client from schema.prisma models
+```bash
+pnpm exec prisma generate
+```
+
 ## Commands
 ```bash
 npm run db:setup

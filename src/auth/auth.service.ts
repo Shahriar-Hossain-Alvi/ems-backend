@@ -1,30 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { JwtService } from '@nestjs/jwt';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  register(dto: RegisterDto) {
+    return 'This action registers a new user';
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  login(dto: LoginDto) {
+    return 'This action authenticates a user';
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
+  getMe(req: any) {
+    return `This action returns logged in user`;
   }
 
-  findMe(id: number) {
-    return `This action returns logged in user with id #${id}`;
-  }
-
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+  changePassword(req: any, changePasswordData: ChangePasswordDto) {
+    return `This action changes password`;
   }
 }

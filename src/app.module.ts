@@ -8,15 +8,19 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { DepartmentsModule } from './departments/departments.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { PrismaService } from './prisma/prisma.service';
+import { ConfigModule } from '@nestjs/config';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
-    UsersModule,
+    ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
+    UsersModule,
     EmployeesModule,
     AttendanceModule,
     DepartmentsModule,
     PayrollModule,
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

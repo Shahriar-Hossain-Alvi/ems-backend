@@ -4,13 +4,22 @@ import {
   Post,
   Body,
   Patch,
-  Param,
-  Delete,
-  ParseIntPipe,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { ChangePasswordDto } from './dto/change-password.dto';
+
+interface AuthenticatedRequest extends Request {
+  user: {
+    sub: number;
+    email: string;
+    role: string;
+  };
+}
 
 @Controller('auth')
 export class AuthController {
@@ -24,36 +33,28 @@ export class AuthController {
   PATCH	/auth/change-password: Changes the authenticated user's password
   */
 
-  @Post('/login')
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
+  @Post('register')
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
   }
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
+  @Post('login')
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
   }
 
-  @Get('/me/:id')
-  findMe(@Param('id', ParseIntPipe) id: number) {
-    return this.authService.findMe(id);
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  getMe(@Req() req: AuthenticatedRequest) {
+    return this.authService.getMe(req.user.sub);
   }
 
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.authService.findOne(id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateAuthDto: UpdateAuthDto,
+  @UseGuards(JwtAuthGuard)
+  @Patch('change-password')
+  changePassword(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: ChangePasswordDto,
   ) {
-    return this.authService.update(id, updateAuthDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.authService.remove(id);
+    return this.authService.changePassword(req.user.sub, dto);
   }
 }
