@@ -37,13 +37,13 @@ async function seedAccount(
     update: {
       passwordHash,
       role,
-      status: 'APPROVED',
+      status: 'ACTIVE',
     },
     create: {
       email,
       passwordHash,
       role,
-      status: 'APPROVED',
+      status: 'ACTIVE',
     },
   });
 

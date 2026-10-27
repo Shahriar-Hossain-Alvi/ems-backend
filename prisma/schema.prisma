@@ -17,14 +17,9 @@ enum Role {
 
 enum AccountStatus {
   PENDING
-  APPROVED
-  REJECTED
-}
-
-enum EmployeeStatus {
   ACTIVE
+  REJECTED
   INACTIVE
-  TERMINATED
 }
 
 enum HeadType{ 
@@ -65,18 +60,15 @@ model Department {
   employees Employee[]
 }
 
-
-
 model Employee {
   id           Int               @id @default(autoincrement())
   userId       Int               @unique
   user         User              @relation(fields: [userId], references: [id])
-  empCode      String            @unique
+  empCode      String?            @unique
   fullName     String
   phone        String?
   designation  String?
   joinDate     DateTime?
-  status       EmployeeStatus  @default(ACTIVE)
   departmentId Int?
   department   Department?       @relation(fields: [departmentId], references: [id])
   structureId  Int?
@@ -151,6 +143,7 @@ model Payslip {
   year          Int
   daysPresent   Int
   lateDays      Int
+  workingDays   Int
   overtimeHours Decimal       @db.Decimal(6, 2)
   gross         Decimal       @db.Decimal(12, 2)
   deductions    Decimal       @db.Decimal(12, 2)

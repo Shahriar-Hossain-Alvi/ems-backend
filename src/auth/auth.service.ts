@@ -10,7 +10,6 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { hashPassword, verifyPassword } from '../common/utils/password.util';
 import { AccountStatus } from '../generated/prisma/enums';
-import { randomUUID } from 'node:crypto';
 
 @Injectable()
 export class AuthService {
@@ -55,7 +54,6 @@ export class AuthService {
               }
             : {
                 create: {
-                  empCode: `PENDING-${existingUser.id}`,
                   fullName: dto.fullName,
                   phone: dto.phone,
                   designation: dto.designation,
@@ -87,7 +85,6 @@ export class AuthService {
         status: 'PENDING',
         employee: {
           create: {
-            empCode: `PENDING-${randomUUID()}`,
             fullName: dto.fullName,
             phone: dto.phone,
             designation: dto.designation,
@@ -120,12 +117,15 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
-    if (user.status !== 'APPROVED') {
-      throw new UnauthorizedException(
-        user.status === 'PENDING'
-          ? 'Your account is awaiting admin approval.'
-          : 'Your account is not approved for access.',
-      );
+    if (user.status !== AccountStatus.ACTIVE) {
+      const messages: Record<AccountStatus, string> = {
+        PENDING: 'Your account is awaiting admin approval.',
+        ACTIVE: 'Your account is active.',
+        REJECTED: 'Your registration was rejected.',
+        INACTIVE: 'Your account has been deactivated.',
+      };
+
+      throw new UnauthorizedException(messages[user.status]);
     }
 
     const accessToken = await this.jwtService.signAsync({
@@ -158,7 +158,6 @@ export class AuthService {
             phone: true,
             designation: true,
             joinDate: true,
-            status: true,
             departmentId: true,
             structureId: true,
           },
