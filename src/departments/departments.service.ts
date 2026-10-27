@@ -16,13 +16,24 @@ export class DepartmentsService {
     const name = dto.name.trim();
 
     try {
+      // check if a department with the same name already exists
+      const existingDepartment = await this.prisma.department.findUnique({
+        where: { name },
+      });
+
+      if (existingDepartment) {
+        throw new ConflictException(
+          'A department with this name already exists.',
+        );
+      }
+
       return await this.prisma.department.create({
         data: { name },
-        include: {
-          _count: {
-            select: { employees: true },
-          },
-        },
+        // include: {
+        //   _count: {
+        //     select: { employees: true },
+        //   },
+        // },
       });
     } catch (error) {
       if (this.isPrismaError(error, 'P2002')) {

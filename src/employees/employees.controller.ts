@@ -1,45 +1,44 @@
 import {
   Controller,
   Get,
-  Post,
-  Body,
-  Patch,
   Param,
-  Delete,
+  ParseIntPipe,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
-import { EmployeesService } from './employees.service';
-import { CreateEmployeeDto } from './dto/create-employee.dto';
-import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 
+import { EmployeesService } from './employees.service';
+import { GetEmployeesQueryDto } from './dto/get-employees-query.dto';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Permissions } from '../common/utils/decorators/permissions.decorator';
+
+@ApiTags('Employees')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@Permissions('SUPER_ADMIN', 'ADMIN', 'DEMO_ADMIN')
 @Controller('employees')
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
-  @Post()
-  create(@Body() createEmployeeDto: CreateEmployeeDto) {
-    return this.employeesService.create(createEmployeeDto);
-  }
-
   @Get()
-  findAll() {
-    return this.employeesService.findAll();
+  @ApiOperation({
+    summary: 'List employees with pagination and optional filters',
+  })
+  findAll(@Query() query: GetEmployeesQueryDto) {
+    return this.employeesService.findAll(query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.employeesService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateEmployeeDto: UpdateEmployeeDto,
-  ) {
-    return this.employeesService.update(+id, updateEmployeeDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.employeesService.remove(+id);
+  @ApiOperation({ summary: 'Get employee details by ID' })
+  @ApiParam({ name: 'id', type: Number })
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.employeesService.findOne(id);
   }
 }
