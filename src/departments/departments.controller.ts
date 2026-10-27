@@ -1,45 +1,77 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
-import { DepartmentsService } from './departments.service';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
+import { GetDepartmentsQueryDto } from './dto/get-departments-query.dto';
+import { DepartmentsService } from './departments.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Permissions } from '../common/utils/decorators/permissions.decorator';
 
+@ApiTags('Departments')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('departments')
 export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) {}
 
   @Post()
-  create(@Body() createDepartmentDto: CreateDepartmentDto) {
-    return this.departmentsService.create(createDepartmentDto);
+  @UseGuards(PermissionsGuard)
+  @Permissions('SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Create a department (admin only)' })
+  create(@Body() dto: CreateDepartmentDto) {
+    return this.departmentsService.create(dto);
   }
 
   @Get()
-  findAll() {
-    return this.departmentsService.findAll();
+  @ApiOperation({ summary: 'List departments, optionally filtered by name' })
+  findAll(@Query() query: GetDepartmentsQueryDto) {
+    return this.departmentsService.findAll(query);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.departmentsService.findOne(+id);
+  @ApiOperation({ summary: 'Get a department by ID' })
+  @ApiParam({ name: 'id', type: Number })
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.departmentsService.findOne(id);
   }
 
   @Patch(':id')
+  @UseGuards(PermissionsGuard)
+  @Permissions('SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Update a department (admin only)' })
+  @ApiParam({ name: 'id', type: Number })
   update(
-    @Param('id') id: string,
-    @Body() updateDepartmentDto: UpdateDepartmentDto,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateDepartmentDto,
   ) {
-    return this.departmentsService.update(+id, updateDepartmentDto);
+    return this.departmentsService.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.departmentsService.remove(+id);
+  @UseGuards(PermissionsGuard)
+  @Permissions('SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({
+    summary: 'Delete a department with no assigned employees (admin only)',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.departmentsService.remove(id);
   }
 }
