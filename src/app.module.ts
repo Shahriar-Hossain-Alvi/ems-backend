@@ -9,6 +9,7 @@ import { DepartmentsModule } from './departments/departments.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
+import { WorkPolicyModule } from './work-policy/work-policy.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PrismaModule } from './prisma/prisma.module';
     DepartmentsModule,
     PayrollModule,
     PrismaModule,
+    WorkPolicyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

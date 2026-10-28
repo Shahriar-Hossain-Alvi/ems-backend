@@ -50,12 +50,32 @@ async function seedAccount(
   console.log(`Seeded ${role}: ${email}`);
 }
 
+async function seedWorkPolicy() {
+  await prisma.workPolicy.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      shiftStart: '09:00',
+      shiftEnd: '18:00',
+      graceMinutes: 15,
+      breakMinutes: 60,
+      standardHours: 8,
+      workingDays: 22,
+    },
+  });
+
+  console.log('Seeded WorkPolicy');
+}
+
 async function main() {
   await seedAccount('SUPER_ADMIN_EMAIL', 'SUPER_ADMIN_PASSWORD', 'SUPER_ADMIN');
 
   await seedAccount('ADMIN_EMAIL', 'ADMIN_PASSWORD', 'ADMIN');
 
   await seedAccount('DEMO_ADMIN_EMAIL', 'DEMO_ADMIN_PASSWORD', 'DEMO_ADMIN');
+
+  await seedWorkPolicy();
 }
 
 main()
