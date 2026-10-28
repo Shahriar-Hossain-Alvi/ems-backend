@@ -9,6 +9,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 
 @Injectable()
 export class EmployeesService {
@@ -326,6 +327,52 @@ export class EmployeesService {
           user: updatedUser,
         },
       };
+    });
+  }
+
+  async updateMyProfile(userId: number, dto: UpdateMyProfileDto) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employee profile was not found.');
+    }
+
+    return this.prisma.employee.update({
+      where: { id: employee.id },
+      data: {
+        ...(dto.fullName !== undefined && {
+          fullName: dto.fullName,
+        }),
+        ...(dto.phone !== undefined && {
+          phone: dto.phone,
+        }),
+        ...(dto.designation !== undefined && {
+          designation: dto.designation,
+        }),
+      },
+      select: {
+        id: true,
+        empCode: true,
+        fullName: true,
+        phone: true,
+        designation: true,
+        joinDate: true,
+        department: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        structure: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
   }
 }

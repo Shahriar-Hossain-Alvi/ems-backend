@@ -6,6 +6,7 @@ import {
   ParseIntPipe,
   Patch,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -22,6 +23,15 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Permissions } from '../common/utils/decorators/permissions.decorator';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { UpdateEmployeeStatusDto } from './dto/update-employee-status.dto';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
+
+interface AuthenticatedRequest extends Request {
+  user: {
+    sub: number;
+    email: string;
+    role: string;
+  };
+}
 
 @ApiTags('Employees')
 @ApiBearerAuth()
@@ -37,6 +47,16 @@ export class EmployeesController {
   })
   findAll(@Query() query: GetEmployeesQueryDto) {
     return this.employeesService.findAll(query);
+  }
+
+  @Patch('me')
+  @Permissions('EMPLOYEE')
+  @ApiOperation({ summary: 'Update the authenticated employee profile' })
+  updateMyProfile(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: UpdateMyProfileDto,
+  ) {
+    return this.employeesService.updateMyProfile(req.user.sub, dto);
   }
 
   @Get(':id')
