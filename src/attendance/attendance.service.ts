@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { GetMyAttendanceQueryDto } from './dto/get-my-attendance-query.dto';
 import { GetAttendanceQueryDto } from './dto/get-attendance-query.dto';
+import { CorrectAttendanceDto } from './dto/correct-attendance.dto';
 
 const DEFAULT_POLICY = {
   id: 1,
@@ -432,5 +433,71 @@ export class AttendanceService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async correctAttendance(id: number, dto: CorrectAttendanceDto) {
+    const attendance = await this.prisma.attendance.findUnique({
+      where: { id },
+    });
+
+    if (!attendance) {
+      throw new NotFoundException('Attendance record not found');
+    }
+
+    const policy = await this.getPolicy();
+
+    const clockIn =
+      dto.clockIn !== undefined ? new Date(dto.clockIn) : attendance.clockIn;
+
+    const clockOut =
+      dto.clockOut !== undefined ? new Date(dto.clockOut) : attendance.clockOut;
+
+    if (clockOut && clockOut <= clockIn) {
+      throw new BadRequestException(
+        'Clock-out time must be after clock-in time',
+      );
+    }
+
+    let workMinutes = 0;
+    let overtimeMinutes = 0;
+
+    if (clockOut) {
+      const elapsedMinutes = Math.floor(
+        (clockOut.getTime() - clockIn.getTime()) / 60000,
+      );
+
+      workMinutes = Math.max(elapsedMinutes - policy.breakMinutes, 0);
+      overtimeMinutes = Math.max(workMinutes - policy.standardHours * 60, 0);
+    }
+
+    // Calculate lateness using the corrected clock-in time in Dhaka.
+    const timeParts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Dhaka',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(clockIn);
+
+    const getPart = (type: string) =>
+      Number(timeParts.find((part) => part.type === type)?.value ?? 0);
+
+    const clockInMinutes = getPart('hour') * 60 + getPart('minute');
+    const [shiftHour, shiftMinute] = policy.shiftStart.split(':').map(Number);
+
+    const shiftStartMinutes = shiftHour * 60 + shiftMinute;
+
+    const calculatedIsLate =
+      clockInMinutes > shiftStartMinutes + policy.graceMinutes;
+
+    return this.prisma.attendance.update({
+      where: { id },
+      data: {
+        ...(dto.clockIn !== undefined && { clockIn }),
+        ...(dto.clockOut !== undefined && { clockOut }),
+        isLate: dto.isLate ?? calculatedIsLate,
+        workMinutes,
+        overtimeMinutes,
+      },
+    });
   }
 }

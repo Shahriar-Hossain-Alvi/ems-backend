@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AttendanceService } from './attendance.service';
@@ -7,6 +18,7 @@ import { GetAttendanceQueryDto } from './dto/get-attendance-query.dto';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Permissions } from '../common/utils/decorators/permissions.decorator';
+import { CorrectAttendanceDto } from './dto/correct-attendance.dto';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -65,5 +77,15 @@ export class AttendanceController {
   })
   findAll(@Query() query: GetAttendanceQueryDto) {
     return this.attendanceService.findAll(query);
+  }
+
+  @Patch(':id')
+  @Permissions('SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Correct an attendance record' })
+  correctAttendance(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CorrectAttendanceDto,
+  ) {
+    return this.attendanceService.correctAttendance(id, dto);
   }
 }
