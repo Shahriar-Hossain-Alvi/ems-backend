@@ -11,6 +11,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { WorkPolicyModule } from './work-policy/work-policy.module';
 import { PayrollConfigModule } from './payroll-config/payroll-config.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PayrollConfigModule } from './payroll-config/payroll-config.module';
     PrismaModule,
     WorkPolicyModule,
     PayrollConfigModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
