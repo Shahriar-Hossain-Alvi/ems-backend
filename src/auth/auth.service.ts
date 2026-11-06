@@ -158,8 +158,19 @@ export class AuthService {
             phone: true,
             designation: true,
             joinDate: true,
-            departmentId: true,
-            structureId: true,
+            department: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            structure: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+              },
+            },
           },
         },
       },

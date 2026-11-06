@@ -12,7 +12,13 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { GetMeResponseDto } from './dto/auth-response.dto';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -51,9 +57,13 @@ export class AuthController {
 
   @ApiOperation({ summary: "Get the authenticated user's information." })
   @ApiBearerAuth()
+  @ApiOkResponse({
+    description: 'Returns the authenticated user.',
+    type: GetMeResponseDto,
+  })
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMe(@Req() req: AuthenticatedRequest) {
+  getMe(@Req() req: AuthenticatedRequest): Promise<GetMeResponseDto> {
     return this.authService.getMe(req.user.sub);
   }
 
