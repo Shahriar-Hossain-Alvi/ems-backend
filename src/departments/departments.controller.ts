@@ -25,14 +25,13 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Permissions } from '../common/utils/decorators/permissions.decorator';
 
 @ApiTags('Departments')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('departments')
 export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) {}
 
   @Post()
-  @UseGuards(PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
   @Permissions('SUPER_ADMIN', 'ADMIN')
   @ApiOperation({ summary: 'Create a department (admin only)' })
   create(@Body() dto: CreateDepartmentDto) {
@@ -53,7 +52,8 @@ export class DepartmentsController {
   }
 
   @Patch(':id')
-  @UseGuards(PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
   @Permissions('SUPER_ADMIN', 'ADMIN')
   @ApiOperation({ summary: 'Update a department (admin only)' })
   @ApiParam({ name: 'id', type: Number })
@@ -65,7 +65,8 @@ export class DepartmentsController {
   }
 
   @Delete(':id')
-  @UseGuards(PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @ApiBearerAuth()
   @Permissions('SUPER_ADMIN', 'ADMIN')
   @ApiOperation({
     summary: 'Delete a department with no assigned employees (admin only)',
