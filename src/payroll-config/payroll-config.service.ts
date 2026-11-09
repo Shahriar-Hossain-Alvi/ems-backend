@@ -21,7 +21,7 @@ export class PayrollConfigService {
 
   async findAllStructures() {
     return this.prisma.payrollStructure.findMany({
-      orderBy: { name: 'asc' },
+      orderBy: { id: 'asc' },
       include: {
         _count: {
           select: {

@@ -56,7 +56,7 @@ export class DepartmentsService {
             },
           }
         : undefined,
-      orderBy: { name: 'asc' },
+      orderBy: { id: 'asc' },
       include: {
         _count: {
           select: { employees: true },

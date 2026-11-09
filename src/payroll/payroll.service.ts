@@ -11,6 +11,7 @@ import {
   HeadType,
   PayslipStatus,
   Prisma,
+  Role,
   UnitSource,
 } from '../generated/prisma/client';
 
@@ -29,7 +30,12 @@ type PayrollCalculation = {
   employeeId: number;
   empCode: string | null;
   fullName: string;
-  status: 'READY' | 'NO_STRUCTURE' | 'NO_BASIC_HEAD';
+  status:
+    | 'READY'
+    | 'NO_STRUCTURE'
+    | 'NO_BASIC_HEAD'
+    | 'MISSING_JOIN_DATE'
+    | 'NOT_YET_JOINED';
   message?: string;
   daysPresent: number;
   lateDays: number;
@@ -40,34 +46,33 @@ type PayrollCalculation = {
   netPay: number;
   items: PayrollItemCalculation[];
 };
+// type PayrollAttendanceRecord = {
+//   clockIn: Date | null;
+//   isLate: boolean;
+//   overtimeMinutes: number;
+// };
 
-type PayrollAttendanceRecord = {
-  clockIn: Date | null;
-  isLate: boolean;
-  overtimeMinutes: number;
-};
+// type PayrollStructureEntry = {
+//   value: Prisma.Decimal;
+//   head: {
+//     name: string;
+//     type: HeadType;
+//     calcType: CalcType;
+//     unitSource: UnitSource | null;
+//     isBasic: boolean;
+//   };
+// };
 
-type PayrollStructureEntry = {
-  value: Prisma.Decimal;
-  head: {
-    name: string;
-    type: HeadType;
-    calcType: CalcType;
-    unitSource: UnitSource | null;
-    isBasic: boolean;
-  };
-};
-
-type EmployeePayrollInput = {
-  id: number;
-  empCode: string | null;
-  fullName: string;
-  payrollWorkingDays: number;
-  attendance: PayrollAttendanceRecord[];
-  structure: {
-    heads: PayrollStructureEntry[];
-  } | null;
-};
+// type EmployeePayrollInput = {
+//   id: number;
+//   empCode: string | null;
+//   fullName: string;
+//   payrollWorkingDays: number;
+//   attendance: PayrollAttendanceRecord[];
+//   structure: {
+//     heads: PayrollStructureEntry[];
+//   } | null;
+// };
 
 type PayrollEmployee = Prisma.EmployeeGetPayload<{
   include: {
@@ -82,6 +87,7 @@ type PayrollEmployee = Prisma.EmployeeGetPayload<{
     };
     attendance: {
       select: {
+        workDate: true;
         clockIn: true;
         isLate: true;
         overtimeMinutes: true;
@@ -90,6 +96,7 @@ type PayrollEmployee = Prisma.EmployeeGetPayload<{
   };
 }> & {
   payrollWorkingDays: number;
+  isNotYetJoined: boolean;
 };
 
 @Injectable()
@@ -102,8 +109,12 @@ export class PayrollService {
     this.validatePeriod(dto);
 
     const employees = await this.getActiveEmployeesForPeriod(dto);
+
     const existingPayslips = await this.prisma.payslip.findMany({
-      where: { month: dto.month, year: dto.year },
+      where: {
+        month: dto.month,
+        year: dto.year,
+      },
       select: {
         employeeId: true,
         status: true,
@@ -130,12 +141,32 @@ export class PayrollService {
       return calculation;
     });
 
+    const countStatus = (status: string) =>
+      results.filter((item) => item.status === status).length;
+
+    const ready = countStatus('READY');
+    const alreadyPublished = countStatus('ALREADY_PUBLISHED');
+    const notYetJoined = countStatus('NOT_YET_JOINED');
+    const missingJoinDate = countStatus('MISSING_JOIN_DATE');
+    const missingStructure = countStatus('NO_STRUCTURE');
+    const missingBasicSalary = countStatus('NO_BASIC_HEAD');
+
     return {
       month: dto.month,
       year: dto.year,
+
       totalEmployees: results.length,
-      ready: results.filter((item) => item.status === 'READY').length,
-      issues: results.filter((item) => item.status !== 'READY').length,
+
+      ready,
+      alreadyPublished,
+      notYetJoined,
+      missingJoinDate,
+      missingStructure,
+      missingBasicSalary,
+
+      // Actual payroll configuration/data issues.
+      issues: missingJoinDate + missingStructure + missingBasicSalary,
+
       employees: results,
     };
   }
@@ -273,28 +304,39 @@ export class PayrollService {
   async publish(dto: PayrollPeriodDto) {
     this.validatePeriod(dto);
 
-    const result = await this.prisma.payslip.updateMany({
-      where: {
-        month: dto.month,
-        year: dto.year,
-        status: PayslipStatus.DRAFT,
-      },
-      data: {
-        status: PayslipStatus.PUBLISHED,
-      },
-    });
+    const [alreadyPublishedCount, result] = await this.prisma.$transaction([
+      this.prisma.payslip.count({
+        where: {
+          month: dto.month,
+          year: dto.year,
+          status: PayslipStatus.PUBLISHED,
+        },
+      }),
+
+      this.prisma.payslip.updateMany({
+        where: {
+          month: dto.month,
+          year: dto.year,
+          status: PayslipStatus.DRAFT,
+        },
+        data: {
+          status: PayslipStatus.PUBLISHED,
+        },
+      }),
+    ]);
 
     return {
       month: dto.month,
       year: dto.year,
       publishedCount: result.count,
+      alreadyPublishedCount,
+
       message:
         result.count > 0
           ? 'Draft payslips published successfully.'
           : 'No draft payslips were found for this period.',
     };
   }
-
   // ---------- EMPLOYEE PAYSLIP HISTORY ----------
 
   async findMyPayslips(userId: number, query: GetMyPayslipsQueryDto) {
@@ -436,6 +478,8 @@ export class PayrollService {
       where: {
         user: {
           status: AccountStatus.ACTIVE,
+          // Only include employees with the EMPLOYEE role
+          role: Role.EMPLOYEE,
         },
       },
       orderBy: { id: 'asc' },
@@ -457,6 +501,7 @@ export class PayrollService {
             },
           },
           select: {
+            workDate: true,
             clockIn: true,
             isLate: true,
             overtimeMinutes: true,
@@ -464,16 +509,51 @@ export class PayrollService {
         },
       },
     });
-    return employees.map((employee): PayrollEmployee => ({
-      ...employee,
-      payrollWorkingDays: workingDays,
-    }));
+    const daysInMonth = new Date(Date.UTC(dto.year, dto.month, 0)).getUTCDate();
+
+    return employees.map((employee): PayrollEmployee => {
+      const joinDate = employee.joinDate
+        ? startOfUtcDay(employee.joinDate)
+        : null;
+
+      const isNotYetJoined = joinDate !== null && joinDate >= end;
+
+      let employeeWorkingDays = 0;
+
+      if (joinDate && !isNotYetJoined) {
+        if (joinDate <= start) {
+          // Employee worked for the entire payroll period.
+          employeeWorkingDays = workingDays;
+        } else {
+          // Employee joined during this payroll month.
+          const eligibleCalendarDays = daysInMonth - joinDate.getUTCDate() + 1;
+
+          employeeWorkingDays = Math.round(
+            (workingDays * eligibleCalendarDays) / daysInMonth,
+          );
+        }
+      }
+
+      return {
+        ...employee,
+        payrollWorkingDays: employeeWorkingDays,
+        isNotYetJoined,
+      };
+    });
   }
 
   private calculateEmployeePayroll(
     employee: PayrollEmployee,
   ): PayrollCalculation {
-    const attendance = employee.attendance;
+    const joinDate = employee.joinDate
+      ? startOfUtcDay(employee.joinDate)
+      : null;
+
+    // Only count attendance on or after the joining date.
+    const attendance = joinDate
+      ? employee.attendance.filter((record) => record.workDate >= joinDate)
+      : [];
+
     const workingDays = employee.payrollWorkingDays;
 
     const daysPresent = attendance.filter(
@@ -503,6 +583,24 @@ export class PayrollService {
       items: [] as PayrollItemCalculation[],
     };
 
+    // Joining date is mandatory for payroll calculation.
+    if (!joinDate) {
+      return {
+        ...base,
+        status: 'MISSING_JOIN_DATE',
+        message: 'Employee joining date is not assigned.',
+      };
+    }
+
+    // Employee has not joined during the selected payroll period.
+    if (employee.isNotYetJoined) {
+      return {
+        ...base,
+        status: 'NOT_YET_JOINED',
+        message: 'Employee joined after the selected payroll period.',
+      };
+    }
+
     if (!employee.structure) {
       return {
         ...base,
@@ -530,6 +628,8 @@ export class PayrollService {
     }
 
     const basicSalary = Number(basicStructureHead.value);
+
+    // Calculate absence only against the employee's eligible working days.
     const absentDays = Math.max(workingDays - daysPresent, 0);
 
     let gross = 0;
@@ -613,4 +713,10 @@ export class PayrollService {
 
 function roundMoney(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function startOfUtcDay(date: Date): Date {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
 }
