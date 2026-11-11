@@ -1,8 +1,22 @@
-# Employee Management System Backend
-
+# Employee Management System: Backend
 This repository contains the backend API for an Employee Management System built with NestJS, Prisma, PostgreSQL, and JWT-based authentication.
 
 It supports employee onboarding, department management, attendance tracking, payroll configuration, and role-based admin workflows.
+
+Live Link: [https://ems-sh.netlify.app](https://ems-sh.netlify.app) 
+
+Frontend Repository: [ems-frontend](https://github.com/Shahriar-Hossain-Alvi/ems-frontend).
+
+## Features
+
+- **Sign-up and approval:** a new account starts as `PENDING`; an admin approves or rejects it. Approval generates the employee ID (e.g. `EMP-00042`). Only `ACTIVE` accounts can log in.
+- **Roles:** `SUPER_ADMIN`, `ADMIN`, `DEMO_ADMIN` (view-only) and `EMPLOYEE`, enforced by a permissions guard on every route.
+- **Attendance:** clock in and out; lateness, work minutes and overtime follow an editable work policy (times compared in Asia/Dhaka). Admins can correct a record.
+- **Payroll configuration:** reusable payroll heads (earning or deduction) with three calculation types (`FIXED`, `PERCENT_OF_BASIC`, `PER_UNIT`), grouped into payroll structures and assigned to employees.
+- **Payroll run:** generate `DRAFT` payslips for a month, then publish. Published payslips are never overwritten; employees see only their own published payslips.
+- **Admin data:** departments, work policy, employee directory, dashboards.
+- Swagger UI at `/docs` in development.
+
 
 ## Tech Stack
 
@@ -14,189 +28,57 @@ It supports employee onboarding, department management, attendance tracking, pay
 - Swagger/OpenAPI
 - Class-validator / DTO validation
 
-## Features
 
-- User registration and login
-- Role-based access control
-- Employee profiles and department assignment
-- Attendance management
-- Payroll structures and payslip generation support
-- Admin approval flow for new employee accounts
-- API documentation via Swagger at `/docs`
 
-## Project Structure
+## Getting started
 
-```bash
-src/
-├── app.module.ts
-├── auth/
-├── attendance/
-├── common/
-├── departments/
-├── employees/
-├── payroll/
-├── prisma/
-├── users/
-├── main.ts
-└── generated/
-prisma/
-├── schema.prisma
-├── migrations/
-├── seed.ts
-└── ...
-```
+Requirements: Node.js 20+, pnpm, PostgreSQL.
 
-## Prerequisites
+1. Install packages:
+   ```bash
+   pnpm install
+   ```
+2. Create `.env` in the project root:
+   ```bash
+   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ems_dev"
+   JWT_SECRET="change-me"
+   JWT_EXPIRES_IN="3d"
 
-Before running the project, make sure you have:
+   SUPER_ADMIN_EMAIL="superadmin@example.com"
+   SUPER_ADMIN_PASSWORD="change-me"
+   ADMIN_EMAIL="admin@example.com"
+   ADMIN_PASSWORD="change-me"
+   DEMO_ADMIN_EMAIL="demo@example.com"
+   DEMO_ADMIN_PASSWORD="change-me"
+   ```
+3. Create the database, generate the client, migrate and seed:
+   ```bash
+   node scripts/create-database.cjs
+   pnpm exec prisma generate
+   pnpm exec prisma migrate dev
+   pnpm exec prisma db seed
+   ```
+4. Start the server:
+   ```bash
+   pnpm run start:dev
+   ```
 
-- Node.js 20+
-- pnpm
-- PostgreSQL installed and running
-- A database user with permissions to create databases
+The API runs at `http://localhost:3000` (no `/api` prefix); Swagger UI is at `http://localhost:3000/docs`. The seed creates the work policy and the admin-side accounts. Departments are added by an admin in the frontend.
 
-## Environment Setup
+## Payroll rules in short
 
-Create a `.env` file in the project root and add the following values:
+- Late if clock-in is after shift start plus grace (default 09:15). Work minutes = elapsed minus break (default 60). Overtime = work minutes above standard hours (default 8).
+- A payroll head set as basic (fixed earning) is required in a structure. `PERCENT_OF_BASIC` uses it; `PER_UNIT` multiplies by overtime hours, late days or absent days.
+- Net pay = gross earnings minus deductions.
+- An employee is skipped (with a reason) if the joining date is missing or later than the month, no structure is assigned, or the structure has no basic head.
 
-```bash
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ems_dev"
-JWT_SECRET="your-super-secret-key"
-JWT_EXPIRES_IN="3d"
+## Limitations
 
-SUPER_ADMIN_EMAIL="superadmin@example.com"
-SUPER_ADMIN_PASSWORD="superadminpassword"
+- **No attendance device integration.** The web clock in/out buttons stand in for a time attendance device.
+- No leave, holiday calendar, tax, email or password reset. Working days per month is a single setting (default 22).
+- No automated tests yet; testing was manual.
+- Payroll amounts are computed with rounded floating-point numbers and stored as decimals.
 
-ADMIN_EMAIL="admin@example.com"
-ADMIN_PASSWORD="adminpassword"
+## Scripts
 
-DEMO_ADMIN_EMAIL="demo@example.com"
-DEMO_ADMIN_PASSWORD="demopassword"
-```
-
-Notes:
-- `DATABASE_URL` should point to your PostgreSQL instance.
-- The seeded admin accounts are created by the Prisma seed script.
-- `JWT_SECRET` should be a strong random value in production.
-
-## Quick Start
-
-```bash
-# Install dependencies
-pnpm install
-
-# Create the empty PostgreSQL database (if it doesn't exist)
-node scripts/create-database.cjs
-
-# Generate Prisma Client
-pnpm exec prisma generate
-
-# Run database migrations
-pnpm exec prisma migrate dev --name init
-
-# Seed default admin users
-pnpm exec prisma db seed
-
-# Start the app in development mode
-pnpm run start:dev
-```
-
-The app runs by default on:
-
-```bash
-http://localhost:3000
-```
-
-Swagger UI is available at:
-
-```bash
-http://localhost:3000/docs
-```
-
-## Common Commands
-
-```bash
-# Start without watch mode
-pnpm run start
-
-# Start in watch mode
-pnpm run start:dev
-
-# Start in debug mode with watch
-pnpm run start:debug
-
-# Build the project
-pnpm run build
-
-# Run tests
-pnpm run test
-
-# Run tests in watch mode
-pnpm run test:watch
-
-# Run e2e tests
-pnpm run test:e2e
-
-# Lint the project
-pnpm run lint
-
-# Format code
-pnpm run format
-```
-
-## Prisma Commands
-
-```bash
-# Create a new migration after changing schema.prisma
-pnpm exec prisma migrate dev --name name-of-the-migration
-
-# Regenerate Prisma Client
-pnpm exec prisma generate
-
-# Run the seed script
-pnpm exec prisma db seed
-```
-
-## NestJS Resource Generation
-
-```bash
-# Generate a full resource (module, controller, service, DTOs, etc.)
-pnpm exec nest g resource users --no-spec
-
-# Generate individual modules/services/controllers
-pnpm exec nest g module employees
-pnpm exec nest g controller employees --no-spec
-pnpm exec nest g service employees --no-spec
-```
-
-## Default Seeded Accounts
-
-The project seeds these admin-level accounts during database seeding:
-
-- SUPER_ADMIN_EMAIL / SUPER_ADMIN_PASSWORD
-- ADMIN_EMAIL / ADMIN_PASSWORD
-- DEMO_ADMIN_EMAIL / DEMO_ADMIN_PASSWORD
-
-These accounts are created with active status and role-based privileges.
-
-## Notes
-
-- This backend is designed to work with an employee approval flow where new employee registrations are created as `PENDING` and must be approved by an admin.
-- The repository includes Prisma migration history and database schema definitions for departments, employees, payroll, and attendance models.
-- Some workflow and business rules are managed through Prisma enums and validation DTOs in the `src` modules.
-
-## Troubleshooting
-
-If the database is not created yet:
-
-```bash
-node scripts/create-database.cjs
-```
-
-If Prisma client is out of sync with the schema:
-
-```bash
-pnpm exec prisma generate
-```
-
-If you want to reset the local development database and run the schema again, use the appropriate Prisma migration or database management commands for your local PostgreSQL instance.
+`pnpm run start:dev` (watch mode), `pnpm run build`, `pnpm run start:prod`, `pnpm run lint`.
